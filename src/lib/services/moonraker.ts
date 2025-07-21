@@ -87,7 +87,7 @@ class MoonrakerClient {
   }
 
   private onError(event: Event): void {
-    console.error('WebSocket error:', event);
+    console.error('WebSocket error occurred. See browser network tab for details.');
     this.notifyConnectionState(ConnectionState.ERROR);
     this.ws?.close();
   }
