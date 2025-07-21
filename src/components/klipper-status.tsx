@@ -2,26 +2,31 @@
 
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
+import { getMoonrakerClient, ConnectionState } from '@/lib/services/moonraker';
 
-type Status = 'Ready' | 'Reconnecting' | 'Disconnected';
-
-const statusConfig: { [key in Status]: { color: string; pulse: boolean; text: string } } = {
-  Ready: { color: 'bg-green-500', pulse: false, text: 'Klipper Ready' },
-  Reconnecting: { color: 'bg-yellow-500', pulse: true, text: 'Reconnecting...' },
-  Disconnected: { color: 'bg-red-500', pulse: true, text: 'Disconnected' },
+const statusConfig: { [key in ConnectionState]: { color: string; pulse: boolean; text: string } } = {
+  [ConnectionState.CONNECTED]: { color: 'bg-green-500', pulse: false, text: 'Klipper Ready' },
+  [ConnectionState.RECONNECTING]: { color: 'bg-yellow-500', pulse: true, text: 'Reconnecting...' },
+  [ConnectionState.DISCONNECTED]: { color: 'bg-red-500', pulse: true, text: 'Disconnected' },
+  [ConnectionState.CONNECTING]: { color: 'bg-yellow-500', pulse: true, text: 'Connecting...' },
+  [ConnectionState.ERROR]: { color: 'bg-red-500', pulse: false, text: 'Connection Error' },
 };
 
 export default function KlipperStatus() {
-  const [status, setStatus] = useState<Status>('Ready');
+  const [status, setStatus] = useState<ConnectionState>(ConnectionState.DISCONNECTED);
 
   useEffect(() => {
-    const statuses: Status[] = ['Ready', 'Ready', 'Ready', 'Reconnecting', 'Disconnected'];
-    let currentIndex = 0;
-    const interval = setInterval(() => {
-      currentIndex = (currentIndex + 1) % statuses.length;
-      setStatus(statuses[currentIndex]);
-    }, 5000);
-    return () => clearInterval(interval);
+    const client = getMoonrakerClient();
+    
+    const handleConnectionChange = (newState: ConnectionState) => {
+      setStatus(newState);
+    };
+
+    client.addConnectionCallback(handleConnectionChange);
+
+    return () => {
+      client.removeConnectionCallback(handleConnectionChange);
+    };
   }, []);
 
   const { color, pulse, text } = statusConfig[status];
